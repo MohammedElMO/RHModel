@@ -15,12 +15,12 @@ cd /d "%SCRIPT_DIR%"
 
 REM Create virtual environment
 echo.
-echo 1️⃣ Creating virtual environment...
-python -m venv venv
+echo 1️⃣ Creating virtual environment (.venv)...
+python -m venv .venv
 
 REM Activate virtual environment
 echo 2️⃣ Activating virtual environment...
-call venv\Scripts\activate.bat
+call .venv\Scripts\activate.bat
 
 REM Upgrade pip
 echo 3️⃣ Upgrading pip...
@@ -38,14 +38,9 @@ if exist requirements.txt (
 )
 
 REM Run setup.py
-echo 5️⃣ Initializing project structure...
-python setup.py
+echo 5️⃣ Clearing Streamlit cache (if any)...
+python -m streamlit cache clear
 
 echo.
-echo ✅ Setup complete!
-echo.
-echo Next steps:
-echo 1. Activate environment: venv\Scripts\activate
-echo 2. Run app: streamlit run app.py
-echo.
-pause
+echo ✅ Setup complete! Launching app...
+python -m streamlit run app.py

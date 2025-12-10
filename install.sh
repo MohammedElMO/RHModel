@@ -16,16 +16,20 @@ echo -e "${GREEN}Project directory: $SCRIPT_DIR${NC}"
 cd "$SCRIPT_DIR" || exit 1
 
 # Create virtual environment
-echo -e "\n${YELLOW}1️⃣ Creating virtual environment...${NC}"
-python3 -m venv venv
+echo -e "\n${YELLOW}1️⃣ Creating virtual environment (.venv)...${NC}"
+python3 -m venv .venv
 
 # Activate virtual environment
 echo -e "${YELLOW}2️⃣ Activating virtual environment...${NC}"
-source venv/bin/activate
+source .venv/bin/activate
 
 # Upgrade pip
 echo -e "${YELLOW}3️⃣ Upgrading pip...${NC}"
 pip install --upgrade pip setuptools wheel
+
+# Clear streamlit cache if present
+echo -e "${YELLOW}🧹 Clearing Streamlit cache (if any)...${NC}"
+python -m streamlit cache clear || true
 
 # Install requirements
 echo -e "${YELLOW}4️⃣ Installing dependencies from requirements.txt...${NC}"
@@ -41,9 +45,5 @@ fi
 echo -e "${YELLOW}5️⃣ Initializing project structure...${NC}"
 python setup.py
 
-echo -e "\n${GREEN}✅ Setup complete!${NC}"
-echo ""
-echo "Next steps:"
-echo "1. Activate environment: source venv/bin/activate"
-echo "2. Run app: streamlit run app.py"
-echo ""
+echo -e "\n${GREEN}✅ Setup complete! Launching app...${NC}"
+python -m streamlit run app.py
