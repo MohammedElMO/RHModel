@@ -1,12 +1,13 @@
 from config import FEATURE_RANGES, MODELS, COLORS
-from components.gauge_chart import create_failure_gauge
+# FIXED IMPORT: We now import the new text display function
+from components.gauge_chart import display_failure_percentage
 from components.status_badge import status_with_confidence
 from utils.data_processor import DataProcessor
 import streamlit as st
 from utils.styles import apply_styles
 from models.model_manager import ModelManager
 from config import MODELS, COLORS
-
+# Removed: import plotly.graph_objects as go
 
 st.set_page_config(
     page_title="Maintenance Prédictive IoT",
@@ -120,9 +121,10 @@ with tab_manual:
                         confidence = (
                             100.0 - failure_pct) if is_safe else failure_pct
                         status_with_confidence(is_safe, confidence)
-                        # Pass 0-1 probability; gauge will scale internally
-                        fig = create_failure_gauge(failure_prob)
-                        st.plotly_chart(fig, width="stretch")
+
+                        # Display centered percentage instead of gauge
+                        display_failure_percentage(failure_prob)
+
                 except Exception as e:
                     st.error(f"Erreur de prédiction : {e}")
 

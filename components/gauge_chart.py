@@ -1,48 +1,38 @@
-import plotly.graph_objects as go
+import streamlit as st
 from config import COLORS
 
 
-def create_failure_gauge(probability: float) -> go.Figure:
+def display_failure_percentage(probability: float):
     """
-    Create a gauge chart showing failure probability.
+    Displays the failure probability as a centered text and percentage value,
+    without using Plotly. The color changes based on the risk level.
 
     Args:
-        probability: A float representing failure probability.
-                     Expected range 0.0-1.0; values >1 are normalized.
+        probability: A float representing failure probability (0.0 - 1.0).
     """
-    # Normalize: if value > 1, assume it's already a percentage and clamp
-    if probability > 1.0:
-        display_value = min(probability, 100.0)
+    # Convert 0-1 float to 0-100 percentage
+    failure_pct = round(probability * 100.0, 1)
+
+    # Determine status color based on the same ranges as the old gauge
+    if failure_pct < 40:
+        color_code = COLORS.get('success', '#10B981')
+    elif failure_pct < 70:
+        color_code = COLORS.get('warning', '#F59E0B')
     else:
-        display_value = probability * 100.0
+        color_code = COLORS.get('danger', '#EF4444')
 
-    fig = go.Figure(data=[go.Indicator(
-        mode="gauge+number+delta",
-        value=display_value,
-        title={"text": "Probabilité de défaillance (%)"},
-        delta={"reference": 50, "suffix": " vs Seuil"},
-        gauge={
-            "axis": {"range": [0, 100]},
-            "bar": {"color": COLORS.get('warning', '#F59E0B')},
-            "steps": [
-                {"range": [0, 40], "color": COLORS.get('success', '#10B981')},
-                {"range": [40, 70], "color": COLORS.get('warning', '#F59E0B')},
-                {"range": [70, 100], "color": COLORS.get('danger', '#EF4444')}
-            ],
-            "threshold": {
-                "line": {"color": "white", "width": 4},
-                "thickness": 0.75,
-                "value": 60
-            }
-        },
-        number={"suffix": "%"}
-    )])
-
-    fig.update_layout(
-        plot_bgcolor="#ffffff",
-        paper_bgcolor="#ffffff",
-        font={"color": "#111827", "size": 14},
-        height=400
+    st.markdown("---")
+    st.markdown(
+        f"""
+        <div style="text-align: center; padding: 10px 0; border-radius: 8px;">
+            <div style="font-size: 20px; color: #4B5563; margin-bottom: 5px;">
+                Probabilité de défaillance (%)
+            </div>
+            <div style="font-size: 60px; font-weight: bold; color: {color_code}; line-height: 1;">
+                {failure_pct}%
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
     )
-
-    return fig
+    st.markdown("---")

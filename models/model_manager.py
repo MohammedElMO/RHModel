@@ -2,9 +2,6 @@ import joblib
 import numpy as np
 import warnings
 from pathlib import Path
-from sklearn.svm import SVC
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.preprocessing import StandardScaler
 import streamlit as st
 from config import MODEL_PATH, SCALER_FILE
 
@@ -18,111 +15,83 @@ except ImportError:
 
 
 class ModelManager:
-    """Manage model loading and predictions."""
+    """Manage model loading and predictions without simulation fallback."""
 
     def __init__(self):
         self.svm_model = None
         self.dt_model = None
         self.scaler = None
         self._load_models()
-        self._ensure_fitted_scaler()
+        # Removed _ensure_fitted_scaler() to prevent synthetic data usage
 
     def _load_models(self):
-        """Load models and scaler from configured paths, fallback to simulated if missing."""
+        """Load models and scaler from configured paths. Fail if missing."""
         try:
             # Resolve absolute path to models directory from config
             project_root = Path(__file__).resolve().parent.parent
             model_path = project_root / MODEL_PATH
 
             # Ensure directory exists
-            model_path.mkdir(parents=True, exist_ok=True)
+            if not model_path.exists():
+                st.error(
+                    f"❌ Error: The model directory '{model_path}' does not exist.")
+                return
 
-            # Load scaler if present
+            # 1. Load Scaler (Strict Requirement)
             scaler_file = model_path / SCALER_FILE
             if scaler_file.exists():
                 self.scaler = joblib.load(scaler_file)
                 st.success("✓ Échelle (scaler) chargée avec succès !")
             else:
-                self.scaler = StandardScaler()
-                st.info(
-                    "ℹ️ Fichier du scaler introuvable. Initialisation d'un nouveau scaler.")
+                self.scaler = None
+                st.error(
+                    f"❌ Erreur critique : Fichier scaler introuvable ({scaler_file}). Les prédictions sont impossibles.")
 
-            # Try to load SVM model
+            # 2. Load SVM Model
             svm_file = model_path / "svm_model.pkl"
             if svm_file.exists():
                 self.svm_model = joblib.load(svm_file)
                 st.success("✓ Modèle SVM chargé avec succès !")
             else:
-                self.svm_model = SVC(probability=True)
-                st.info("ℹ️ Modèle SVM introuvable. Utilisation d'un modèle simulé.")
+                self.svm_model = None
+                st.warning("⚠️ Modèle SVM introuvable (svm_model.pkl).")
 
-            # Try to load Decision Tree model
+            # 3. Load Decision Tree Model
             dt_file = model_path / "decision_tree_model.pkl"
             if dt_file.exists():
                 self.dt_model = joblib.load(dt_file)
                 st.success("✓ Modèle Arbre de décision chargé avec succès !")
             else:
-                self.dt_model = DecisionTreeClassifier()
-                st.info(
-                    "ℹ️ Modèle Arbre de décision introuvable. Utilisation d'un modèle simulé.")
+                self.dt_model = None
+                st.warning(
+                    "⚠️ Modèle Arbre de décision introuvable (decision_tree_model.pkl).")
 
         except Exception as e:
             st.error(f"❌ Erreur de chargement des modèles : {e}")
 
-    def _ensure_fitted_scaler(self):
-        """Ensure the scaler is fitted; if not, fit on synthetic data from feature ranges."""
-        try:
-            if self.scaler is None:
-                self.scaler = StandardScaler()
-
-            # Check if scaler has been fitted
-            if not hasattr(self.scaler, "mean_"):
-                from config import FEATURE_RANGES
-                import numpy as np
-
-                # Build a small synthetic dataset using min/mean/max per feature (5 features)
-                mins = [
-                    FEATURE_RANGES["air_temperature_k"][0],
-                    FEATURE_RANGES["process_temperature_k"][0],
-                    FEATURE_RANGES["rotational_speed_rpm"][0],
-                    FEATURE_RANGES["torque_nm"][0],
-                    FEATURE_RANGES["tool_wear_min"][0],
-                ]
-                means = [
-                    sum(FEATURE_RANGES["air_temperature_k"]) / 2,
-                    sum(FEATURE_RANGES["process_temperature_k"]) / 2,
-                    int(sum(FEATURE_RANGES["rotational_speed_rpm"]) / 2),
-                    sum(FEATURE_RANGES["torque_nm"]) / 2,
-                    int(sum(FEATURE_RANGES["tool_wear_min"]) / 2),
-                ]
-                maxs = [
-                    FEATURE_RANGES["air_temperature_k"][1],
-                    FEATURE_RANGES["process_temperature_k"][1],
-                    FEATURE_RANGES["rotational_speed_rpm"][1],
-                    FEATURE_RANGES["torque_nm"][1],
-                    FEATURE_RANGES["tool_wear_min"][1],
-                ]
-
-                X_synth = np.array([mins, means, maxs], dtype=float)
-                self.scaler.fit(X_synth)
-                st.info(
-                    "ℹ️ Scaler not found/fitted. Using synthetic fit based on feature ranges.")
-        except Exception as e:
-            st.error(f"❌ Erreur lors de la configuration du scaler : {e}")
-
     def predict(self, X_scaled: np.ndarray, model_name: str) -> tuple[np.ndarray, np.ndarray]:
         """
-        Make predictions.
-
-        Returns:
-            predictions (0/1), probabilities
+        Make predictions only if models are loaded.
+        Returns: predictions (0/1), probabilities
         """
-        try:
-            if model_name == "Support Vector Machine (SVM)":
-                model = self.svm_model
-            else:
-                model = self.dt_model
+        # Strict check: If scaler failed to load, we cannot trust X_scaled
+        if self.scaler is None:
+            st.error("⛔ Action bloquée : Le scaler n'est pas chargé.")
+            return None, None
 
+        # Select the model
+        if model_name == "Support Vector Machine (SVM)":
+            model = self.svm_model
+        else:
+            model = self.dt_model
+
+        # Strict check: If model failed to load, do not predict
+        if model is None:
+            st.error(
+                f"⛔ Action bloquée : Le modèle '{model_name}' n'est pas chargé. Vérifiez le dossier models_pkl.")
+            return None, None
+
+        try:
             predictions = model.predict(X_scaled)
 
             # Get probabilities
@@ -132,20 +101,20 @@ class ModelManager:
                 try:
                     classes = getattr(model, "classes_", None)
                     if classes is not None:
-                        # Find index of class 1; default to last column if not found
                         if 1 in classes:
                             idx1 = int(np.where(classes == 1)[0][0])
                         else:
                             idx1 = -1
                         proba = proba_all[:, idx1]
                     else:
-                        # Fallback: assume second column corresponds to class 1
                         proba = proba_all[:, -1]
                 except Exception:
-                    # Robust fallback
                     proba = proba_all[:, -1]
             else:
-                proba = np.random.rand(len(predictions)) * 0.3  # Simulate
+                # Removed random simulation. If model has no probabilities, warn user.
+                st.warning(
+                    "⚠️ Ce modèle ne supporte pas les probabilités (predict_proba manquant).")
+                proba = np.zeros(len(predictions))
 
             return predictions, proba
 
@@ -154,5 +123,5 @@ class ModelManager:
             return None, None
 
     def get_scaler(self):
-        """Return fitted scaler."""
+        """Return loaded scaler or None."""
         return self.scaler
