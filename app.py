@@ -34,11 +34,12 @@ with st.sidebar:
     """, unsafe_allow_html=True)
 
     st.markdown("### 🤖 Modèle")
+    # Menu déroulant (sélection uniquement, sans saisie libre des valeurs)
     selected_model = st.selectbox(
         "Sélectionner un modèle",
-        MODELS,
+        options=MODELS,
+        help="Choisissez l'algorithme utilisé pour les prédictions",
         label_visibility="collapsed",
-        help="Choisissez l'algorithme utilisé pour les prédictions"
     )
 
     st.divider()
