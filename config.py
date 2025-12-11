@@ -1,4 +1,29 @@
 # Model Configuration
+# MODEL_PATH = "models_pkl"
+# SCALER_FILE = "scaler.pkl"
+# 
+# # Feature Ranges (Industrial Standards)
+# FEATURE_RANGES = {
+#     "air_temperature_k": (295.0, 305.0),
+#     "process_temperature_k": (305.0, 315.0),
+#     "rotational_speed_rpm": (1168, 2772),
+#     "torque_nm": (3.8, 76.6),
+#     "tool_wear_min": (0, 240),
+#     "type": ["L", "M", "H"]
+# }
+# 
+# # Modern Color Palette (Adaptive to System Theme)
+
+
+# Model Algorithms
+# MODELS = [
+#     "Support Vector Machine (SVM)",
+#     "Decision Tree"
+# ]
+
+# config.py
+
+# Model Configuration
 MODEL_PATH = "models_pkl"
 SCALER_FILE = "scaler.pkl"
 
@@ -12,7 +37,9 @@ FEATURE_RANGES = {
     "type": ["L", "M", "H"]
 }
 
-# Modern Color Palette (Adaptive to System Theme)
+# Modern Color Palette
+
+
 COLORS = {
     "primary": "#6366F1",        # Indigo
     "primary_light": "#818CF8",
@@ -27,9 +54,3 @@ COLORS = {
     "gradient_success": "linear-gradient(135deg, #11998e 0%, #38ef7d 100%)",
     "gradient_danger": "linear-gradient(135deg, #ee0979 0%, #ff6a00 100%)"
 }
-
-# Model Algorithms
-MODELS = [
-    "Support Vector Machine (SVM)",
-    "Decision Tree"
-]
