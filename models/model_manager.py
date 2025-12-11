@@ -41,31 +41,33 @@ class ModelManager:
             scaler_file = model_path / SCALER_FILE
             if scaler_file.exists():
                 self.scaler = joblib.load(scaler_file)
-                st.success("✓ Scaler loaded successfully!")
+                st.success("✓ Échelle (scaler) chargée avec succès !")
             else:
                 self.scaler = StandardScaler()
-                st.info("ℹ️ Scaler file not found. Initialized a new scaler.")
+                st.info(
+                    "ℹ️ Fichier du scaler introuvable. Initialisation d'un nouveau scaler.")
 
             # Try to load SVM model
             svm_file = model_path / "svm_model.pkl"
             if svm_file.exists():
                 self.svm_model = joblib.load(svm_file)
-                st.success("✓ SVM model loaded successfully!")
+                st.success("✓ Modèle SVM chargé avec succès !")
             else:
                 self.svm_model = SVC(probability=True)
-                st.info("ℹ️ SVM model not found. Using simulated model.")
+                st.info("ℹ️ Modèle SVM introuvable. Utilisation d'un modèle simulé.")
 
             # Try to load Decision Tree model
             dt_file = model_path / "decision_tree_model.pkl"
             if dt_file.exists():
                 self.dt_model = joblib.load(dt_file)
-                st.success("✓ Decision Tree model loaded successfully!")
+                st.success("✓ Modèle Arbre de décision chargé avec succès !")
             else:
                 self.dt_model = DecisionTreeClassifier()
-                st.info("ℹ️ Decision Tree model not found. Using simulated model.")
+                st.info(
+                    "ℹ️ Modèle Arbre de décision introuvable. Utilisation d'un modèle simulé.")
 
         except Exception as e:
-            st.error(f"❌ Model loading error: {e}")
+            st.error(f"❌ Erreur de chargement des modèles : {e}")
 
     def _ensure_fitted_scaler(self):
         """Ensure the scaler is fitted; if not, fit on synthetic data from feature ranges."""
@@ -106,7 +108,7 @@ class ModelManager:
                 st.info(
                     "ℹ️ Scaler not found/fitted. Using synthetic fit based on feature ranges.")
         except Exception as e:
-            st.error(f"❌ Scaler setup error: {e}")
+            st.error(f"❌ Erreur lors de la configuration du scaler : {e}")
 
     def predict(self, X_scaled: np.ndarray, model_name: str) -> tuple[np.ndarray, np.ndarray]:
         """
@@ -148,7 +150,7 @@ class ModelManager:
             return predictions, proba
 
         except Exception as e:
-            st.error(f"❌ Prediction error: {e}")
+            st.error(f"❌ Erreur de prédiction : {e}")
             return None, None
 
     def get_scaler(self):

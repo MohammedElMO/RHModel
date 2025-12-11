@@ -3,26 +3,26 @@ from config import COLORS
 
 
 def status_badge(is_safe: bool):
-    """Display modern status badge with gradient."""
+    """Display modern status badge with gradient (French UI)."""
     if is_safe:
         html = f"""
         <div class="status-badge status-safe">
-            ✓ SAFE - OPERATION APPROVED
+            ✓ SÛR - OPÉRATION APPROUVÉE
         </div>
         """
         st.markdown(html, unsafe_allow_html=True)
     else:
         html = f"""
         <div class="status-badge status-failure">
-            ⚠️ FAILURE RISK - MAINTENANCE NEEDED
+            ⚠️ RISQUE DE DÉFAILLANCE - MAINTENANCE REQUISE
         </div>
         """
         st.markdown(html, unsafe_allow_html=True)
 
 
 def status_with_confidence(is_safe: bool, confidence: float):
-    """Display modern status with confidence score."""
-    status = "SAFE" if is_safe else "FAILURE"
+    """Display modern status with confidence score (French UI)."""
+    status = "SÛR" if is_safe else "DÉFAILLANCE"
     icon = "✅" if is_safe else "⚠️"
     gradient = COLORS['gradient_success'] if is_safe else COLORS['gradient_danger']
 
@@ -37,7 +37,7 @@ def status_with_confidence(is_safe: bool, confidence: float):
             {icon} {status}
         </div>
         <div style="font-size: 18px; color: rgba(255, 255, 255, 0.9);">
-            Confidence Level: <span style="font-weight: 700; font-size: 24px;">{confidence:.1f}%</span>
+            Niveau de confiance : <span style="font-weight: 700; font-size: 24px;">{confidence:.1f}%</span>
         </div>
     </div>
     """

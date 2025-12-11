@@ -9,7 +9,7 @@ from config import MODELS, COLORS
 
 
 st.set_page_config(
-    page_title="IoT Predictive Maintenance",
+    page_title="Maintenance Prédictive IoT",
     page_icon="🛠️",
     layout="wide",
 )
@@ -20,29 +20,30 @@ apply_styles()
 if "model_manager" not in st.session_state:
     st.session_state.model_manager = ModelManager()
 
-st.title("🔧 Predictive Maintenance Assistant")
-st.caption("Simple, chat-style UI: enter values or upload CSV, then predict.")
+st.title("🔧 Assistant de maintenance prédictive")
+st.caption(
+    "Interface simple : saisissez des valeurs ou importez un CSV, puis lancez la prédiction.")
 
 # Modern, helpful sidebar (no routes)
 with st.sidebar:
     st.markdown("""
     <div style="padding: 8px 0 16px 0;">
-        <div style="font-size: 20px; font-weight: 700;">⚡ IoT Assistant</div>
-        <div style="font-size: 12px; opacity: 0.7;">AI-powered equipment analytics</div>
+        <div style="font-size: 20px; font-weight: 700;">⚡ Assistant IoT</div>
+        <div style="font-size: 12px; opacity: 0.7;">Analytique d'équipement propulsée par l'IA</div>
     </div>
     """, unsafe_allow_html=True)
 
-    st.markdown("### 🤖 Model")
+    st.markdown("### 🤖 Modèle")
     selected_model = st.selectbox(
-        "Select Model",
+        "Sélectionner un modèle",
         MODELS,
         label_visibility="collapsed",
-        help="Choose the algorithm used for predictions"
+        help="Choisissez l'algorithme utilisé pour les prédictions"
     )
 
     st.divider()
 
-    st.markdown("### 💡 Operating Ranges")
+    st.markdown("### 💡 Plages de fonctionnement")
     st.markdown(
         "- Air Temperature: 295.3–304.5 K\n"
         "- Process Temperature: 305.7–313.8 K\n"
@@ -52,21 +53,21 @@ with st.sidebar:
 
     st.divider()
 
-    st.markdown("### 📄 Required CSV Columns")
+    st.markdown("### 📄 Colonnes CSV requises")
     st.code("air_temperature_k, process_temperature_k, rotational_speed_rpm, torque_nm, tool_wear_min")
 
     st.divider()
 
-    with st.expander("ℹ️ Help & About"):
+    with st.expander("ℹ️ Aide & À propos"):
         st.markdown(
-            "This tool predicts equipment safety vs. failure risk using pre-trained models in `models_pkl/`.")
+            "Cet outil prédit la sécurité de l'équipement et le risque de défaillance à l'aide de modèles entraînés dans `models_pkl/`.")
         st.markdown(
-            "For better accuracy, keep sensor inputs realistic and consistent.")
+            "Pour de meilleurs résultats, utilisez des entrées réalistes et cohérentes.")
 
-tab_manual, tab_csv = st.tabs(["Manual Input", "CSV Upload"])
+tab_manual, tab_csv = st.tabs(["Saisie manuelle", "Import CSV"])
 
 with tab_manual:
-    st.subheader("Manual Equipment Data")
+    st.subheader("Données équipement (saisie)")
     col1, col2, col3 = st.columns(3)
 
     # Inputs
@@ -97,19 +98,19 @@ with tab_manual:
         "tool_wear_min": tool_wear_min,
     }
 
-    if st.button("Predict", width="stretch"):
+    if st.button("Prédire", width="stretch"):
         valid, msg = DataProcessor.validate_input(input_data)
         if not valid:
-            st.error(f"Validation Error: {msg}")
+            st.error(f"Erreur de validation : {msg}")
         else:
-            with st.spinner("🔮 Running prediction..."):
+            with st.spinner("🔮 Prédiction en cours..."):
                 try:
                     X_scaled = DataProcessor.prepare_single_input(
                         input_data, st.session_state.model_manager.get_scaler())
                     preds, probs = st.session_state.model_manager.predict(
                         X_scaled, selected_model)
                     if preds is None:
-                        st.error("Prediction failed.")
+                        st.error("La prédiction a échoué.")
                     else:
                         is_safe = preds[0] == 0
                         # probs[0] is 0-1 probability of failure (class 1)
@@ -122,12 +123,12 @@ with tab_manual:
                         fig = create_failure_gauge(failure_prob)
                         st.plotly_chart(fig, width="stretch")
                 except Exception as e:
-                    st.error(f"Prediction error: {e}")
+                    st.error(f"Erreur de prédiction : {e}")
 
 with tab_csv:
-    st.subheader("Batch Prediction via CSV")
+    st.subheader("Prédiction par lot via CSV")
     uploaded = st.file_uploader(
-        "Upload CSV with required columns",
+        "Importer un CSV avec les colonnes requises",
         type=["csv"],
         help="Columns: air_temperature_k, process_temperature_k, rotational_speed_rpm, torque_nm, tool_wear_min"
     )
@@ -135,18 +136,18 @@ with tab_csv:
         import pandas as pd
         try:
             df = pd.read_csv(uploaded)
-            st.info(f"📄 Loaded {len(df)} rows")
+            st.info(f"📄 {len(df)} lignes chargées")
             st.dataframe(df.head(10), width="stretch")
 
-            if st.button("Run Batch Prediction", width="stretch"):
-                with st.spinner("⚙️ Processing batch predictions..."):
+            if st.button("Lancer la prédiction par lot", width="stretch"):
+                with st.spinner("⚙️ Traitement des prédictions par lot..."):
                     X_processed, df_processed = DataProcessor.process_csv(
                         df, st.session_state.model_manager.get_scaler())
                     preds, probs = st.session_state.model_manager.predict(
                         X_processed, selected_model)
 
                 if preds is None:
-                    st.error("Prediction failed.")
+                    st.error("La prédiction a échoué.")
                 else:
                     results = df.copy()
                     import numpy as np
@@ -159,19 +160,19 @@ with tab_csv:
                     )
 
                     st.success(
-                        f"✅ Predictions complete! Processed {len(results)} records.")
+                        f"✅ Prédictions terminées ! {len(results)} enregistrements traités.")
 
                     # Show results preview immediately
-                    st.subheader("Results Preview")
+                    st.subheader("Aperçu des résultats")
                     st.dataframe(results, width="stretch")
 
                     # Download button below preview
                     st.download_button(
-                        "📥 Download Results CSV",
+                        "📥 Télécharger le CSV des résultats",
                         data=results.to_csv(index=False),
                         file_name="predictions_results.csv",
                         mime="text/csv",
                         width="stretch",
                     )
         except Exception as e:
-            st.error(f"CSV processing error: {e}")
+            st.error(f"Erreur de traitement du CSV : {e}")

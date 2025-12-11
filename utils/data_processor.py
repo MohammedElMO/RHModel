@@ -17,8 +17,8 @@ class DataProcessor:
                 min_val, max_val = FEATURE_RANGES.get(feature, (None, None))
                 if min_val is not None and max_val is not None:
                     if not (min_val <= value <= max_val):
-                        return False, f"{feature} out of range: {min_val}-{max_val}"
-            return True, "Valid"
+                        return False, f"{feature} hors limites : {min_val}–{max_val}"
+            return True, "Valide"
         except Exception as e:
             return False, str(e)
 

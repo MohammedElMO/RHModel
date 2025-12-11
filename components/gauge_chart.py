@@ -19,8 +19,8 @@ def create_failure_gauge(probability: float) -> go.Figure:
     fig = go.Figure(data=[go.Indicator(
         mode="gauge+number+delta",
         value=display_value,
-        title={"text": "Failure Probability (%)"},
-        delta={"reference": 50, "suffix": " vs Threshold"},
+        title={"text": "Probabilité de défaillance (%)"},
+        delta={"reference": 50, "suffix": " vs Seuil"},
         gauge={
             "axis": {"range": [0, 100]},
             "bar": {"color": COLORS.get('warning', '#F59E0B')},
