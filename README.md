@@ -68,9 +68,9 @@ python -m streamlit run app.py
 ## Usage
 
 - Choose the model from the sidebar.
-- Manual Input tab: fill in `type`, temperatures, `rotational_speed_rpm`, `torque_nm`, and `tool_wear_min`.
+- Manual Input tab: fill in temperatures, `rotational_speed_rpm`, `torque_nm`, and `tool_wear_min`.
 - CSV Upload tab: upload a CSV with columns:
-  `type, air_temperature_k, process_temperature_k, rotational_speed_rpm, torque_nm, tool_wear_min`
+  `air_temperature_k, process_temperature_k, rotational_speed_rpm, torque_nm, tool_wear_min`
 - Download the results CSV after batch prediction.
 
 ## Troubleshooting

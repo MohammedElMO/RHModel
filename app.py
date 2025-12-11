@@ -49,7 +49,7 @@ with st.sidebar:
     st.divider()
 
     st.markdown("### 📄 Required CSV Columns")
-    st.code("type, air_temperature_k, process_temperature_k, rotational_speed_rpm, torque_nm, tool_wear_min")
+    st.code("air_temperature_k, process_temperature_k, rotational_speed_rpm, torque_nm, tool_wear_min")
 
     st.divider()
 
@@ -67,10 +67,6 @@ with tab_manual:
 
     # Inputs
     with col1:
-        equip_type = st.selectbox(
-            "Equipment Type",
-            FEATURE_RANGES["type"],
-        )
         min_t, max_t = FEATURE_RANGES["air_temperature_k"]
         air_temperature_k = st.number_input(
             "Air Temperature (K)", min_value=float(min_t), max_value=float(max_t), value=float((min_t+max_t)/2), step=0.1
@@ -95,7 +91,6 @@ with tab_manual:
         )
 
     input_data = {
-        "type": equip_type,
         "air_temperature_k": air_temperature_k,
         "process_temperature_k": process_temperature_k,
         "rotational_speed_rpm": rotational_speed_rpm,
@@ -103,26 +98,29 @@ with tab_manual:
         "tool_wear_min": tool_wear_min,
     }
 
-    if st.button("Predict", use_container_width=True):
+    if st.button("Predict", width="stretch"):
         valid, msg = DataProcessor.validate_input(input_data)
         if not valid:
             st.error(f"Validation Error: {msg}")
         else:
             try:
-                X_processed, _ = DataProcessor.process_single(
+                X_scaled = DataProcessor.prepare_single_input(
                     input_data, st.session_state.model_manager.get_scaler())
                 preds, probs = st.session_state.model_manager.predict(
-                    X_processed, selected_model)
+                    X_scaled, selected_model)
                 if preds is None:
                     st.error("Prediction failed.")
                 else:
                     is_safe = preds[0] == 0
-                    failure_prob = float(probs[0]) * 100.0
+                    # probs[0] is 0-1 probability of failure (class 1)
+                    failure_prob = float(probs[0])  # keep as 0-1
+                    failure_pct = failure_prob * 100.0  # for display
                     confidence = (
-                        100.0 - failure_prob) if is_safe else failure_prob
+                        100.0 - failure_pct) if is_safe else failure_pct
                     status_with_confidence(is_safe, confidence)
+                    # Pass 0-1 probability; gauge will scale internally
                     fig = create_failure_gauge(failure_prob)
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, width="stretch")
             except Exception as e:
                 st.error(f"Prediction error: {e}")
 
@@ -131,14 +129,14 @@ with tab_csv:
     uploaded = st.file_uploader(
         "Upload CSV with required columns",
         type=["csv"],
-        help="Columns: type, air_temperature_k, process_temperature_k, rotational_speed_rpm, torque_nm, tool_wear_min"
+        help="Columns: air_temperature_k, process_temperature_k, rotational_speed_rpm, torque_nm, tool_wear_min"
     )
     if uploaded:
         import pandas as pd
         try:
             df = pd.read_csv(uploaded)
-            st.dataframe(df.head(10), use_container_width=True)
-            if st.button("Run Batch Prediction", use_container_width=True):
+            st.dataframe(df.head(10), width="stretch")
+            if st.button("Run Batch Prediction", width="stretch"):
                 X_processed, df_processed = DataProcessor.process_csv(
                     df, st.session_state.model_manager.get_scaler())
                 preds, probs = st.session_state.model_manager.predict(
@@ -156,13 +154,13 @@ with tab_csv:
                                      100).round(2), (probs * 100).round(2)
                     )
                     st.success("Predictions complete")
-                    st.dataframe(results, use_container_width=True)
+                    st.dataframe(results, width="stretch")
                     st.download_button(
                         "Download Results CSV",
                         data=results.to_csv(index=False),
                         file_name="predictions_results.csv",
                         mime="text/csv",
-                        use_container_width=True,
+                        width="stretch",
                     )
         except Exception as e:
             st.error(f"CSV processing error: {e}")

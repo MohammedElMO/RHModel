@@ -1,7 +1,6 @@
 # Model Configuration
 MODEL_PATH = "models_pkl"
-KNN_MODEL_FILE = "knn_model_v2.pkl"
-SCALER_FILE = "scaler_v2.pkl"
+SCALER_FILE = "scaler.pkl"
 
 # Feature Ranges (Industrial Standards)
 FEATURE_RANGES = {
@@ -30,5 +29,7 @@ COLORS = {
 }
 
 # Model Algorithms
-MODELS = ["K-Nearest Neighbors (KNN)",
-          "Support Vector Machine (SVM)", "Decision Tree"]
+MODELS = [
+    "Support Vector Machine (SVM)",
+    "Decision Tree"
+]

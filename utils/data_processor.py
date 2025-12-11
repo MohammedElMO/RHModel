@@ -8,42 +8,37 @@ class DataProcessor:
 
     @staticmethod
     def validate_input(data: dict) -> tuple[bool, str]:
-        """Validate input features."""
+        """Validate input features (excluding 'type')."""
         try:
             for feature, value in data.items():
                 if feature == "type":
-                    if value not in FEATURE_RANGES["type"]:
-                        return False, f"Invalid type: {value}"
-                else:
-                    min_val, max_val = FEATURE_RANGES.get(
-                        feature, (None, None))
-                    if min_val and max_val:
-                        if not (min_val <= value <= max_val):
-                            return False, f"{feature} out of range: {min_val}-{max_val}"
+                    # 'type' is no longer used; ignore if present
+                    continue
+                min_val, max_val = FEATURE_RANGES.get(feature, (None, None))
+                if min_val is not None and max_val is not None:
+                    if not (min_val <= value <= max_val):
+                        return False, f"{feature} out of range: {min_val}-{max_val}"
             return True, "Valid"
         except Exception as e:
             return False, str(e)
 
     @staticmethod
     def prepare_single_input(input_dict: dict, scaler) -> np.ndarray:
-        """Prepare single input for prediction."""
+        """Prepare single input for prediction (5 numeric features only)."""
         feature_order = [
-            "type", "air_temperature_k", "process_temperature_k",
+            "air_temperature_k", "process_temperature_k",
             "rotational_speed_rpm", "torque_nm", "tool_wear_min"
         ]
 
-        # Encode type (L=0, M=1, H=2)
-        type_map = {"L": 0, "M": 1, "H": 2}
-        input_dict["type"] = type_map.get(input_dict["type"], 0)
-
+        # Use numpy array (no feature names) to avoid sklearn feature name mismatch
         X = np.array([[input_dict[f] for f in feature_order]])
         return scaler.transform(X)
 
     @staticmethod
     def process_csv(df: pd.DataFrame, scaler) -> pd.DataFrame:
-        """Process CSV for batch prediction."""
+        """Process CSV for batch prediction (ignore 'type' if present)."""
         required_cols = [
-            "type", "air_temperature_k", "process_temperature_k",
+            "air_temperature_k", "process_temperature_k",
             "rotational_speed_rpm", "torque_nm", "tool_wear_min"
         ]
 
@@ -52,8 +47,6 @@ class DataProcessor:
             raise ValueError(f"Missing columns: {missing}")
 
         df_processed = df.copy()
-        type_map = {"L": 0, "M": 1, "H": 2}
-        df_processed["type"] = df_processed["type"].map(type_map)
-
-        X = scaler.transform(df_processed[required_cols])
-        return pd.DataFrame(X, columns=required_cols), df_processed
+        # Use numpy array (no feature names) to avoid sklearn feature name mismatch
+        X = scaler.transform(df_processed[required_cols].values)
+        return X, df_processed
