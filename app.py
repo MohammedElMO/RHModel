@@ -60,7 +60,7 @@ with tab_manual:
         "tool_wear_min": tool_wear_min,
     }
 
-    if st.button("Prédire", width="stretch"):
+    if st.button("Prédire", use_container_width=True):
         valid, msg = DataProcessor.validate_input(input_data)
         if not valid:
             st.error(f"Erreur : {msg}")
@@ -73,12 +73,14 @@ with tab_manual:
                 if preds is not None:
                     is_safe = preds[0] == 0
                     fail_prob = float(probs[0])
+                    # Logic: If Decision Tree says Safe, confidence is (1-prob). If Fail, confidence is prob.
                     conf_pct = (100.0 * (1 - fail_prob)
                                 ) if is_safe else (100.0 * fail_prob)
 
                     status_with_confidence(is_safe, conf_pct)
                     display_failure_percentage(fail_prob)
 
+# --- CSV BATCH ---
 with tab_csv:
     st.subheader("Prédiction par lot")
     uploaded = st.file_uploader("Importer CSV", type=["csv"])
@@ -87,7 +89,7 @@ with tab_csv:
         df = pd.read_csv(uploaded)
         st.dataframe(df.head(), use_container_width=True)
 
-        if st.button("Lancer l'analyse", width="stretch"):
+        if st.button("Lancer l'analyse", use_container_width=True):
             with st.spinner("Traitement..."):
                 X_proc, _ = DataProcessor.process_csv(
                     df, st.session_state.model_manager.get_scaler())
@@ -96,7 +98,26 @@ with tab_csv:
                 if preds is not None:
                     res = df.copy()
                     import numpy as np
-                    res["Prediction"] = np.where(preds == 0, "SAFE", "FAILURE")
-                    res["Risk_Probability_%"] = (probs * 100).round(2)
+
+                    # --- FRENCH COLUMN NAMES FOR CONSISTENCY ---
+                    res["Statut_Predit"] = np.where(
+                        preds == 0, "SAFE", "FAILURE")
+
+                    # This matches the "Probabilité de défaillance" seen in Manual Mode
+                    res["Probabilité_Défaillance_%"] = (probs * 100).round(2)
+
+                    # Renaming confidence to French as well
+                    res["Indice_Confiance_%"] = np.where(
+                        preds == 0, ((1 - probs) * 100).round(2), (probs * 100).round(2))
+
                     st.success("Terminé !")
                     st.dataframe(res, use_container_width=True)
+
+                    csv_data = res.to_csv(index=False).encode('utf-8')
+                    st.download_button(
+                        label="📥 Télécharger les résultats",
+                        data=csv_data,
+                        file_name="resultats_predictions.csv",
+                        mime="text/csv",
+                        use_container_width=True
+                    )
