@@ -42,9 +42,13 @@ with st.sidebar:
 
     st.divider()
 
-    st.markdown("### 💡 Tips")
+    st.markdown("### 💡 Operating Ranges")
     st.markdown(
-        "- Use Manual Input for quick checks\n- Use CSV for fleet analysis\n- Ensure values fall within typical ranges")
+        "- Air Temperature: 295.3–304.5 K\n"
+        "- Process Temperature: 305.7–313.8 K\n"
+        "- Rotational Speed: 1168–2886 RPM\n"
+        "- Torque: 3.8–76.6 Nm\n"
+        "- Tool Wear: 0–253 min")
 
     st.divider()
 
@@ -67,27 +71,22 @@ with tab_manual:
 
     # Inputs
     with col1:
-        min_t, max_t = FEATURE_RANGES["air_temperature_k"]
         air_temperature_k = st.number_input(
-            "Air Temperature (K)", min_value=float(min_t), max_value=float(max_t), value=float((min_t+max_t)/2), step=0.1
+            "Air Temperature (K)", min_value=295.3, max_value=304.5, value=299.9, step=0.1
         )
     with col2:
-        min_pt, max_pt = FEATURE_RANGES["process_temperature_k"]
         process_temperature_k = st.number_input(
-            "Process Temperature (K)", min_value=float(min_pt), max_value=float(max_pt), value=float((min_pt+max_pt)/2), step=0.1
+            "Process Temperature (K)", min_value=305.7, max_value=313.8, value=309.7, step=0.1
         )
-        min_rpm, max_rpm = FEATURE_RANGES["rotational_speed_rpm"]
         rotational_speed_rpm = st.number_input(
-            "Rotational Speed (RPM)", min_value=int(min_rpm), max_value=int(max_rpm), value=int((min_rpm+max_rpm)/2), step=10
+            "Rotational Speed (RPM)", min_value=1168, max_value=2886, value=2027, step=10
         )
     with col3:
-        min_torque, max_torque = FEATURE_RANGES["torque_nm"]
         torque_nm = st.number_input(
-            "Torque (N·m)", min_value=float(min_torque), max_value=float(max_torque), value=float((min_torque+max_torque)/2), step=1.0
+            "Torque (N·m)", min_value=3.8, max_value=76.6, value=40.2, step=0.1
         )
-        min_wear, max_wear = FEATURE_RANGES["tool_wear_min"]
         tool_wear_min = st.number_input(
-            "Tool Wear (min)", min_value=int(min_wear), max_value=int(max_wear), value=int(max_wear//2), step=5
+            "Tool Wear (min)", min_value=0, max_value=253, value=126, step=1
         )
 
     input_data = {
@@ -103,26 +102,27 @@ with tab_manual:
         if not valid:
             st.error(f"Validation Error: {msg}")
         else:
-            try:
-                X_scaled = DataProcessor.prepare_single_input(
-                    input_data, st.session_state.model_manager.get_scaler())
-                preds, probs = st.session_state.model_manager.predict(
-                    X_scaled, selected_model)
-                if preds is None:
-                    st.error("Prediction failed.")
-                else:
-                    is_safe = preds[0] == 0
-                    # probs[0] is 0-1 probability of failure (class 1)
-                    failure_prob = float(probs[0])  # keep as 0-1
-                    failure_pct = failure_prob * 100.0  # for display
-                    confidence = (
-                        100.0 - failure_pct) if is_safe else failure_pct
-                    status_with_confidence(is_safe, confidence)
-                    # Pass 0-1 probability; gauge will scale internally
-                    fig = create_failure_gauge(failure_prob)
-                    st.plotly_chart(fig, width="stretch")
-            except Exception as e:
-                st.error(f"Prediction error: {e}")
+            with st.spinner("🔮 Running prediction..."):
+                try:
+                    X_scaled = DataProcessor.prepare_single_input(
+                        input_data, st.session_state.model_manager.get_scaler())
+                    preds, probs = st.session_state.model_manager.predict(
+                        X_scaled, selected_model)
+                    if preds is None:
+                        st.error("Prediction failed.")
+                    else:
+                        is_safe = preds[0] == 0
+                        # probs[0] is 0-1 probability of failure (class 1)
+                        failure_prob = float(probs[0])  # keep as 0-1
+                        failure_pct = failure_prob * 100.0  # for display
+                        confidence = (
+                            100.0 - failure_pct) if is_safe else failure_pct
+                        status_with_confidence(is_safe, confidence)
+                        # Pass 0-1 probability; gauge will scale internally
+                        fig = create_failure_gauge(failure_prob)
+                        st.plotly_chart(fig, width="stretch")
+                except Exception as e:
+                    st.error(f"Prediction error: {e}")
 
 with tab_csv:
     st.subheader("Batch Prediction via CSV")
@@ -135,12 +135,16 @@ with tab_csv:
         import pandas as pd
         try:
             df = pd.read_csv(uploaded)
+            st.info(f"📄 Loaded {len(df)} rows")
             st.dataframe(df.head(10), width="stretch")
+
             if st.button("Run Batch Prediction", width="stretch"):
-                X_processed, df_processed = DataProcessor.process_csv(
-                    df, st.session_state.model_manager.get_scaler())
-                preds, probs = st.session_state.model_manager.predict(
-                    X_processed, selected_model)
+                with st.spinner("⚙️ Processing batch predictions..."):
+                    X_processed, df_processed = DataProcessor.process_csv(
+                        df, st.session_state.model_manager.get_scaler())
+                    preds, probs = st.session_state.model_manager.predict(
+                        X_processed, selected_model)
+
                 if preds is None:
                     st.error("Prediction failed.")
                 else:
@@ -153,10 +157,17 @@ with tab_csv:
                         preds == 0, ((1 - probs) *
                                      100).round(2), (probs * 100).round(2)
                     )
-                    st.success("Predictions complete")
+
+                    st.success(
+                        f"✅ Predictions complete! Processed {len(results)} records.")
+
+                    # Show results preview immediately
+                    st.subheader("Results Preview")
                     st.dataframe(results, width="stretch")
+
+                    # Download button below preview
                     st.download_button(
-                        "Download Results CSV",
+                        "📥 Download Results CSV",
                         data=results.to_csv(index=False),
                         file_name="predictions_results.csv",
                         mime="text/csv",
