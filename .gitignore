@@ -23,7 +23,7 @@ __pycache__/
 Thumbs.db
 
 # Project Specific
-models_pkl/*.pkl
+# models_pkl/*.pkl
 data/uploads/*
 *.log
 .streamlit/
